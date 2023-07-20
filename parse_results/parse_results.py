@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 
 from nbv_utils import read_json, write_json
 
-res_dir = '/home/frc-ag-3/harry_ws/fruitlet_2023/nbv/bags/full_res/2023-05-22_tsdfroi'
+res_dir = '/media/frc-ag-3/umass_1/umass_2023_data/field_data/sizing_results/0_1790a8d3/tsdfroi_res/2023-05-22_tsdfroi'
 
 sizing_results_path = os.path.join(res_dir, 'sizing_results.json')
 sizing_results = read_json(sizing_results_path)
