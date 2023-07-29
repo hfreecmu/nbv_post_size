@@ -13,6 +13,7 @@ from std_msgs.msg import Empty
 import rospy
 from cv_bridge import CvBridge
 import tf
+import numpy as np
 
 ### WARNING WARNING WARNING
 #needs use_sim_time set on ros_param server
@@ -22,23 +23,30 @@ import tf
 #steps:
 #roscore
 #rosparam set use_sim_time true
-#python2 extract_images.py --data_dir ${OUTPUT_DIR} --process_rect_images --process_joints
+#python2 1_extract_images.py --data_dir ${OUTPUT_DIR} --process_rect_images --process_joints
+#python2 1_extract_images.py --data_dir ${OUTPUT_DIR} --use_depth
 #rosbag play -r ${RATE} --clock ${BAG_PATH}
 
 class BagExtract():
-    def __init__(self, data_dir, process_rect_images, process_joints, left_only):
+    def __init__(self, data_dir, process_rect_images, process_joints, left_only, use_depth):
         rospy.init_node('bag_extractor', anonymous=True)
 
         self.data_dir = data_dir
         self.process_rect_images = process_rect_images
         self.process_joints = process_joints
         self.left_only = left_only
+        self.use_depth = use_depth
 
-        self.raw_images_dir = os.path.join(data_dir, 'raw_images')
+        if not self.use_depth:
+            self.raw_images_dir = os.path.join(data_dir, 'raw_images')
+
         self.camera_info_dir = os.path.join(data_dir, 'camera_info')
 
         if self.process_rect_images:
             self.rect_images_dir = os.path.join(data_dir, 'rect_images')
+
+        if self.use_depth:
+            self.depth_dir = os.path.join(data_dir, 'depth_images')
 
         self.message_num = 0
 
@@ -59,11 +67,16 @@ class BagExtract():
         self.make_dirs()
 
     def make_dirs(self):
-        subdirs = [self.raw_images_dir, self.camera_info_dir]
+        if self.use_depth:
+            subdirs = [(self.camera_info_dir, True)]
+        else:
+            subdirs = [(self.raw_images_dir, True), (self.camera_info_dir, True)]
+            
         if self.process_rect_images:
-            subdirs.append(self.rect_images_dir)
+            include_right = not self.use_depth
+            subdirs.append((self.rect_images_dir, include_right))
 
-        for subdir in subdirs:
+        for subdir, include_right in subdirs:
             if not os.path.exists(subdir):
                 os.mkdir(subdir)
 
@@ -71,10 +84,14 @@ class BagExtract():
             if not os.path.exists(left_dir):
                 os.mkdir(left_dir)
 
-            if not self.left_only:
+            if (include_right) and (not self.left_only):
                 right_dir = os.path.join(subdir, 'right')
                 if not os.path.exists(right_dir):
                     os.mkdir(right_dir)
+
+        if self.use_depth:
+            if not os.path.exists(self.depth_dir):
+                os.mkdir(self.depth_dir)
 
         if self.process_joints:
             if not os.path.exists(self.ee_states_dir):
@@ -141,16 +158,18 @@ class BagExtract():
 
     def process_images(self, left_image_raw_ros, right_image_raw_ros, 
                        left_camera_info_ros, right_camera_info_ros,
-                       left_image_rect_ros=None, right_image_rect_ros=None):
+                       left_image_rect_ros=None, right_image_rect_ros=None,
+                       depth_image_ros=None):
 
         self.lock.acquire()
 
         print('processing message: ' + str(self.message_num))
         
-        left_image_raw = self.bridge.imgmsg_to_cv2(left_image_raw_ros, desired_encoding='bgr8')
+        if not self.use_depth:
+            left_image_raw = self.bridge.imgmsg_to_cv2(left_image_raw_ros, desired_encoding='bgr8')
 
-        if not self.left_only:
-            right_image_raw = self.bridge.imgmsg_to_cv2(right_image_raw_ros, desired_encoding='bgr8')
+            if not self.left_only:
+                right_image_raw = self.bridge.imgmsg_to_cv2(right_image_raw_ros, desired_encoding='bgr8')
 
         left_camera_info = self.parse_camera_info_msg(left_camera_info_ros)
 
@@ -159,26 +178,36 @@ class BagExtract():
 
         if self.process_rect_images:
             left_image_rect = self.bridge.imgmsg_to_cv2(left_image_rect_ros, desired_encoding='bgr8')
-            if not self.left_only:
+            if (not self.left_only) and (not self.use_depth):
                 right_image_rect = self.bridge.imgmsg_to_cv2(right_image_rect_ros, desired_encoding='bgr8')
+
+        if self.use_depth:
+            depth_image = self.bridge.imgmsg_to_cv2(depth_image_ros, desired_encoding='passthrough')
 
         msg_string =  str(self.message_num).zfill(6)
 
-        left_image_raw_path = os.path.join(self.raw_images_dir, 'left', msg_string + '.png')
-        right_image_raw_path = os.path.join(self.raw_images_dir, 'right', msg_string + '.png')
+        if not self.use_depth:
+            left_image_raw_path = os.path.join(self.raw_images_dir, 'left', msg_string + '.png')
+            right_image_raw_path = os.path.join(self.raw_images_dir, 'right', msg_string + '.png')
 
         left_camera_info_path = os.path.join(self.camera_info_dir, 'left', msg_string + '.yml')
         right_camera_info_path = os.path.join(self.camera_info_dir, 'right', msg_string + '.yml')
 
         if self.process_rect_images:
             left_image_rect_path = os.path.join(self.rect_images_dir, 'left', msg_string + '.png')
-            if not self.left_only:
+            if (not self.left_only) and not (self.use_depth):
                 right_image_rect_path = os.path.join(self.rect_images_dir, 'right', msg_string + '.png')
 
-        cv2.imwrite(left_image_raw_path, left_image_raw)
+        if self.use_depth:
+            depth_image_path = os.path.join(self.depth_dir, msg_string + '.npy')
+            depth_array = np.array(depth_image, dtype=np.float32)
+            np.save(depth_image_path, depth_array)
 
-        if not self.left_only:
-            cv2.imwrite(right_image_raw_path, right_image_raw)
+        if not self.use_depth:
+            cv2.imwrite(left_image_raw_path, left_image_raw)
+
+            if not self.left_only:
+                cv2.imwrite(right_image_raw_path, right_image_raw)
 
         self.write_yaml(left_camera_info_path, left_camera_info)
 
@@ -187,7 +216,7 @@ class BagExtract():
 
         if self.process_rect_images:
             cv2.imwrite(left_image_rect_path, left_image_rect)
-            if not self.left_only:
+            if (not self.left_only) and not (self.use_depth):
                 cv2.imwrite(right_image_rect_path, right_image_rect)
 
         if self.process_joints:
@@ -236,7 +265,16 @@ class BagExtract():
                             left_image_rect_ros=left_image_rect_ros,
                             right_image_rect_ros=right_image_rect_ros)
 
+    def process_depth(self, left_camera_info_ros, right_camera_info_ros,
+                            left_image_rect_ros,
+                            depth_image_ros):
+        self.process_images(None, None, left_camera_info_ros, right_camera_info_ros,
+                            left_image_rect_ros, None, depth_image_ros)
+    
     def get_process_image_callback(self):
+        if self.use_depth:
+            return self.process_depth
+
         if self.left_only and self.process_rect_images:
             return self.process_images_with_rect_left_only
         elif self.left_only:
@@ -266,11 +304,13 @@ class BagExtract():
         with open(output_path, 'w') as f:
             f.write(txt_data)
 
-def start(data_dir, process_rect_images, process_joints, left_only, queue_size=10, slop=0.3):
-    bag_extractor = BagExtract(data_dir, process_rect_images, process_joints, left_only)
+def start(data_dir, process_rect_images, process_joints, left_only, use_depth, 
+          queue_size=10, slop=0.3):
+    bag_extractor = BagExtract(data_dir, process_rect_images, process_joints, left_only, use_depth)
 
-    left_image_topic = "theia/left/image_raw"
-    right_image_topic = "theia/right/image_raw"
+    if not use_depth:
+        left_image_topic = "theia/left/image_raw"
+        right_image_topic = "theia/right/image_raw"
 
     left_camera_info_topic = "theia/left/camera_info"
     if not left_only:
@@ -278,14 +318,17 @@ def start(data_dir, process_rect_images, process_joints, left_only, queue_size=1
 
     if process_rect_images:
         left_image_rect_topic = "theia/left/image_rect_color"
-        if not left_only:
+        if (not left_only) and (not use_depth):
             right_image_rect_topic = "theia/right/image_rect_color"
 
-    
-    left_image_sub = message_filters.Subscriber(left_image_topic, Image)
+    if use_depth:
+        depth_topic = "depth_image"
 
-    if not left_only:
-        right_image_sub = message_filters.Subscriber(right_image_topic, Image)
+    if not use_depth:
+        left_image_sub = message_filters.Subscriber(left_image_topic, Image)
+
+        if not left_only:
+            right_image_sub = message_filters.Subscriber(right_image_topic, Image)
     
     left_camera_info_sub = message_filters.Subscriber(left_camera_info_topic, CameraInfo)
 
@@ -294,19 +337,27 @@ def start(data_dir, process_rect_images, process_joints, left_only, queue_size=1
     
     if process_rect_images:
         left_image_rect_sub = message_filters.Subscriber(left_image_rect_topic, Image)
-        if not left_only:
+        if (not left_only) and (not use_depth):
             right_image_rect_sub = message_filters.Subscriber(right_image_rect_topic, Image)
 
-    if not left_only:
+    if use_depth:
+        depth_image_sub = message_filters.Subscriber(depth_topic, Image)
+
+    if use_depth:
+        async_topics = [left_camera_info_sub, right_camera_info_sub]
+    elif not left_only:
         async_topics = [left_image_sub, right_image_sub,
                         left_camera_info_sub, right_camera_info_sub]
     else:
-        async_topics = [left_image_sub, left_camera_info_sub]
+        async_topics = [left_image_sub, left_camera_info_sub, right_camera_info_sub]
 
     if process_rect_images:
         async_topics.append(left_image_rect_sub)
-        if not left_only:
+        if (not left_only) and (not use_depth):
             async_topics.append(right_image_rect_sub)
+
+    if use_depth:
+        async_topics.append(depth_image_sub)
 
     start_capture_topic = "start_capture"
     start_capture_sub = rospy.Subscriber(start_capture_topic, Empty, bag_extractor.process_start_capture_callback, queue_size=2)
@@ -326,6 +377,7 @@ def parse_args():
     parser.add_argument('--process_rect_images', action='store_true')
     parser.add_argument('--process_joints', action='store_true')
     parser.add_argument('--left_only', action='store_true')
+    parser.add_argument('--use_depth', action='store_true')
 
     args = parser.parse_args()
     return args
@@ -337,8 +389,14 @@ if __name__ == "__main__":
     process_rect_images = args.process_rect_images
     process_joints = args.process_joints
     left_only = args.left_only
+    use_depth = args.use_depth
+
+    if use_depth:
+        left_only = False
+        process_rect_images = True
+        process_joints = True
 
     if not os.path.exists(data_dir):
         raise RuntimeError('data_dir does not exist: ' + data_dir)
 
-    start(data_dir, process_rect_images, process_joints, left_only)
+    start(data_dir, process_rect_images, process_joints, left_only, use_depth)

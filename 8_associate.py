@@ -25,7 +25,10 @@ def process_image(left_path, disp_path, cam_info_path,
     cam_points = np.load(cloud_cam_path)
     transform_path = cloud_cam_path.replace('.npy', '.pkl')
     R_0, t_0 = read_pickle(transform_path)
-    colors = (cv2.imread(left_path).astype(float)) / 255
+
+    colors = cv2.imread(left_path)
+    colors = cv2.cvtColor(colors, cv2.COLOR_BGR2RGB)
+    colors = (colors.astype(float)) / 255
 
     R_0_inv, t_0_inv = get_rot_trans_inv(R_0, t_0)
 
@@ -91,12 +94,12 @@ def get_params():
     
     return [tx, ty, tz]
 
-def process_params(params, param_ind):
+def process_params(params, param_ind, base_image_ind):
     params_n = params[3*param_ind:3*(param_ind + 1)]
     tx, ty, tz = params_n
     t = np.array([tx, ty, tz])
 
-    if param_ind == 0:
+    if param_ind == base_image_ind:
         return [0, 0, 0]
 
     return t
@@ -122,11 +125,11 @@ def compute_residuals(X, Y, VI=np.eye(3)):
     dist = cdist(X, Y, 'mahalanobis', VI=VI).flatten()
     return dist
 
-def residual(params, fruitlets, full_Rs, full_ts):
+def residual(params, fruitlets, full_Rs, full_ts, base_image_ind):
     num_fruitlets = len(fruitlets)
     errors = []
     for ind_0 in range(num_fruitlets):
-        t_0 = process_params(params, ind_0)
+        t_0 = process_params(params, ind_0, base_image_ind)
         c_0 = get_centroids(fruitlets[ind_0])
         
         R_orig_0 = full_Rs[ind_0]
@@ -135,7 +138,7 @@ def residual(params, fruitlets, full_Rs, full_ts):
         c_0 = (R_orig_0 @ (c_0 + t_0).T).T + t_orig_0
 
         for ind_1 in range(ind_0 + 1, num_fruitlets):
-            t_1 = process_params(params, ind_1)
+            t_1 = process_params(params, ind_1, base_image_ind)
             c_1 = get_centroids(fruitlets[ind_1])
 
             R_orig_1 = full_Rs[ind_1]
@@ -148,7 +151,7 @@ def residual(params, fruitlets, full_Rs, full_ts):
 
     return errors
 
-def fruitlet_associate(fruitlets, full_Rs, full_ts,
+def fruitlet_associate(fruitlets, full_Rs, full_ts, base_image_ind,
                        max_trans, f_scale):
     num_images = len(fruitlets)
 
@@ -167,11 +170,11 @@ def fruitlet_associate(fruitlets, full_Rs, full_ts,
                                        loss='arctan',
                                        f_scale=f_scale,
                                        #max_nfev = 50000,
-                                       args=(fruitlets, full_Rs, full_ts,))
+                                       args=(fruitlets, full_Rs, full_ts, base_image_ind,))
     
     ret_vals = []
     for param_ind in range(num_images):
-        t = process_params(res.x, param_ind)
+        t = process_params(res.x, param_ind, base_image_ind)
 
         ret_vals.append(t)
 
@@ -303,6 +306,9 @@ def associate(data_dir, args):
     full_Rs = []
     full_ts = []
     full_cam_points = []
+
+    base_image_ind = None
+    max_fruitlets = -1
     for i in range(len(left_paths)):
         im_fruitlets, im_cam_points, im_colors, R_0, t_0 = process_image(left_paths[i], disp_paths[i], 
                                                       cam_info_paths[i], trans_paths[i], 
@@ -318,8 +324,15 @@ def associate(data_dir, args):
         full_Rs.append(R_0)
         full_ts.append(t_0)
         full_cam_points.append((im_cam_points, im_colors))
+
+        if (len(im_fruitlets) > max_fruitlets):
+            max_fruitlets = len(im_fruitlets)
+            base_image_ind = i
+
+    if base_image_ind is None:
+        raise RuntimeError('No base image ind')
     
-    success, ret_vals = fruitlet_associate(full_fruitlets, full_Rs, full_ts,
+    success, ret_vals = fruitlet_associate(full_fruitlets, full_Rs, full_ts, base_image_ind,
                                            [args.max_xy_trans, args.max_xy_trans, args.max_z_trans], 
                                            args.f_scale)
 

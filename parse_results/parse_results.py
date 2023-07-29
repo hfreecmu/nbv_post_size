@@ -9,7 +9,12 @@ from scipy.optimize import curve_fit
 
 from nbv_utils import read_json, write_json
 
-res_dir = '/media/frc-ag-3/umass_1/umass_2023_data/field_data/sizing_results/0_1790a8d3/tsdfroi_res/2023-05-22_tsdfroi'
+if True:
+    res_dir = '/home/frc-ag-3/harry_ws/viewpoint_planning/docker_catkin_ws/src/viewpoint_planning/exp/res/tsdf_roi_planner_res'
+else:
+    res_dir = '/home/frc-ag-3/harry_ws/viewpoint_planning/docker_catkin_ws/src/viewpoint_planning/exp/res/roi_planner_res'
+
+res_dir = '/home/frc-ag-3/harry_ws/viewpoint_planning/docker_catkin_ws/src/viewpoint_planning/exp/res_output'
 
 sizing_results_path = os.path.join(res_dir, 'sizing_results.json')
 sizing_results = read_json(sizing_results_path)
@@ -60,14 +65,20 @@ write_json(unsized_cv_path, {'mean_unsized_cv_pct': mean_unsized_cv_pct,
 gt_sizes = np.array(gt_sizes)
 cv_sizes = np.array(cv_sizes)
 
+#TODO no z_scores needed right now but maybe later
+cv_mean = np.mean(cv_sizes)
+cv_std = np.std(cv_sizes)
+Z = (cv_sizes - cv_mean) / cv_std
+good_inds = np.where(np.abs(Z) < 2)
+gt_sizes = gt_sizes[good_inds]
+cv_sizes = cv_sizes[good_inds]
+
 mae = float(np.mean(np.abs(gt_sizes - cv_sizes)))
 mape = float(np.mean(np.abs(gt_sizes - cv_sizes)/gt_sizes*100))
 average_error_path = os.path.join(res_dir, 'average_errors.json')
 write_json(average_error_path, {'mae': mae,
                                 'mape': mape},
                                 pretty=True)
-
-#TODO no z_scores needed right now but maybe later
 
 for use_a in [True, False]:
     if use_a:

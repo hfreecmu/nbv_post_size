@@ -17,7 +17,7 @@ GREEN='\033[0;32m'
 CYAN='\033[36m'
 NC='\033[0m' # No Color
 
-VALID_BAG_TYPES=("tsdfroi" "dissim" "linear")
+VALID_BAG_TYPES=("tsdfroi" "dissim" "linear", "cluster")
 KILL_LIMIT=10
 
 echo -e "${GREEN}usage: ./run_sizing_pipeline.sh"
@@ -88,15 +88,27 @@ for SUB_DIR in $DATA_DIR/*/ ; do
 
     #step 3 extract disparities
     echo -e "${GREEN}Extracting disparities for $BASE_NAME"
-    python3 3_extract_disparities.py --data_dir $SUB_DIR --raft_restore_ckpt $RAFT_CKPT
+    if [ "$BAG_TYPE" = "cluster" ]; then 
+        python3 3_extract_disparities_from_depth.py --data_dir $SUB_DIR
+    else
+        python3 3_extract_disparities.py --data_dir $SUB_DIR --raft_restore_ckpt $RAFT_CKPT
+    fi;
 
     #step 4 extract point clouds
     echo -e "${GREEN}Extracting point clouds for $BASE_NAME"
-    python3 4_extract_point_clouds.py --data_dir=$SUB_DIR
+    if [ "$BAG_TYPE" = "cluster" ]; then 
+        python3 4_extract_point_clouds.py --data_dir=$SUB_DIR --bilateral_filter
+    else
+        python3 4_extract_point_clouds.py --data_dir=$SUB_DIR
+    fi;
 
     #step 5 segment
     echo -e "${GREEN}Segmenting for $BASE_NAME"
-    python3 5_segment.py --data_dir $SUB_DIR --model_path $SEG_MODEL_PATH
+    if [ "$BAG_TYPE" = "cluster" ]; then 
+        python3 5_segment_hsv.py --data_dir $SUB_DIR
+    else
+        python3 5_segment.py --data_dir $SUB_DIR --model_path $SEG_MODEL_PATH
+    fi;
 
     #don't need 6 as did already
 
@@ -114,7 +126,12 @@ for SUB_DIR in $DATA_DIR/*/ ; do
 
     #step 10 size
     echo -e "${GREEN}Sizing for $BASE_NAME"
-    python3 10_size.py --data_dir $SUB_DIR
+    if [ "$BAG_TYPE" = "cluster" ]; then 
+        python3 10_size.py --data_dir $SUB_DIR --use_max
+    else
+        python3 10_size.py --data_dir $SUB_DIR
+    fi;
+    
 
 done
 

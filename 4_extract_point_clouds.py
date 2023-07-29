@@ -215,9 +215,10 @@ def extract_point_clouds(data_dir, args):
         transform_path = transform_paths[i]
 
 
-        points, world_points, colors, R, t, discon_map = extract_point_cloud(left_path, disparity_path,
-                                                                 camera_info_path, transform_path,
-                                                                 args, include_discon=True)
+        points, world_points, colors, R, t, discon_map, points_orig, colors_orig = extract_point_cloud(left_path, disparity_path,
+                                                                                                       camera_info_path, transform_path,
+                                                                                                       args, include_discon=True, 
+                                                                                                       include_orig=True)
         basename = os.path.basename(left_path).split('.png')[0]
         cloud_path = os.path.join(cloud_dir, basename + '.pcd')
         create_point_cloud(cloud_path, points.reshape((-1, 3)), colors.reshape((-1, 3)))
@@ -233,6 +234,9 @@ def extract_point_clouds(data_dir, args):
         discon_im = np.zeros(world_points.shape[0:2], dtype=np.uint8)
         discon_im[discon_map > 0] = 255
         cv2.imwrite(discon_path, discon_im)
+
+        orig_path = os.path.join(cloud_dir, basename + '_orig.pcd')
+        create_point_cloud(orig_path, points_orig.reshape((-1, 3)), colors_orig.reshape((-1, 3)))
 
         transform_path = os.path.join(cloud_dir, basename + '.pkl')
         write_pickle(transform_path, [R, t])

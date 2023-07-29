@@ -6,7 +6,7 @@ import numpy as np
 from nbv_utils import write_json, create_point_cloud, create_sphere_point_cloud
 
 #assumes extract_nbv_images has been run with same args
-valid_bag_types = ["tsdfroi", "dissim", "linear"]
+valid_bag_types = ["tsdfroi", "dissim", "linear", "cluster"]
 topic_name = "/target_centre"
 
 def get_target_centre(bag_file):

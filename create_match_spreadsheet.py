@@ -175,6 +175,7 @@ def create_match_spreadsheet(data_dir, res_dir, bag_type, gt_csv, date_str, skip
     gt_data = parse_gt_data(gt_data, skip_tags_date)
 
     if not (len(gt_data) == len(basenames)):
+        #pass
         raise RuntimeError('gt and cv data num do not match')
 
     new_data_dict = parse_cv_data(data_dir, basenames, gt_data)

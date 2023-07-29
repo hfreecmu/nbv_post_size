@@ -47,35 +47,26 @@ def size_fruitlet(im, disp_path, cam_info_path, seg_inds,
 
     return size
 
-# def size_associate_0(size_dict, clusters, bin_res):
+def size_associate_max(size_dict, clusters):
+    final_size_dict = {}
+    for fruitlet_id in clusters['clusters']:
+        max_size = None
+        for node_id in clusters['clusters'][fruitlet_id]:
+            if not node_id in size_dict:
+                continue
 
-#     final_size_dict = {}
-#     for fruitlet_id in clusters['clusters']:
-#         min_occ_bin = None
-#         best_size = None
-#         for node_id in clusters['clusters'][fruitlet_id]:
-#             if not node_id in size_dict:
-#                 continue
+            size = size_dict[node_id]['size']
 
-#             size = size_dict[node_id]['size']
-#             occ_rat = size_dict[node_id]['occ_rat']
+            if (max_size is None) or (size > max_size):
+                max_size = size
 
-#             occ_bin = occ_rat // bin_res
+        if max_size is None:
+            print('warning, could not size for fruitlet_id ' + str(fruitlet_id))
+            final_size_dict[fruitlet_id] = -1
+        else:
+            final_size_dict[fruitlet_id] = max_size
 
-#             if (min_occ_bin is None) or (occ_bin < min_occ_bin):
-#                 best_size = size
-#                 min_occ_bin = occ_bin
-
-#             if (occ_bin == min_occ_bin) and (size > best_size):
-#                 best_size = size
-
-#         if best_size is None:
-#             print('warning, could not size for fruitlet_id ' + str(fruitlet_id))
-#             final_size_dict[fruitlet_id] = -1
-#         else:
-#             final_size_dict[fruitlet_id] = best_size
-
-#     return final_size_dict
+    return final_size_dict
 
 def size_associate(size_dict, clusters, bin_res):
 
@@ -107,7 +98,7 @@ def size_associate(size_dict, clusters, bin_res):
     return final_size_dict
 
 
-def size_fruitlets(data_dir, bin_res):
+def size_fruitlets(data_dir, bin_res, use_max):
     clusters_path = os.path.join(data_dir, 'associations', 'clusters.json')
     if not os.path.exists(clusters_path):
         raise RuntimeError('clusters path does not exist: ' + clusters_path)
@@ -155,7 +146,11 @@ def size_fruitlets(data_dir, bin_res):
     size_path = os.path.join(size_dir, 'full_sizes.json')
     write_json(size_path, size_dict, pretty=True)
 
-    final_size_dict = size_associate(size_dict, clusters, bin_res)
+    if not use_max:
+        final_size_dict = size_associate(size_dict, clusters, bin_res)
+    else:
+        final_size_dict = size_associate_max(size_dict, clusters)
+
     final_size_path = os.path.join(size_dir, 'final_sizes.json')
     write_json(final_size_path, final_size_dict, pretty=True)
 
@@ -163,6 +158,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', required=True)
     parser.add_argument('--bin_res', type=int, default=5)
+    parser.add_argument('--use_max', action='store_true')
     
     args = parser.parse_args()
     return args
@@ -173,8 +169,9 @@ if __name__ == "__main__":
     args = parse_args()
     data_dir = args.data_dir
     bin_res = args.bin_res
+    use_max = args.use_max
 
     if not os.path.exists(data_dir):
         raise RuntimeError('data_dir does not exist: ' + data_dir)
     
-    size_fruitlets(data_dir, bin_res)
+    size_fruitlets(data_dir, bin_res, use_max)

@@ -6,10 +6,7 @@ import numpy as np
 from nbv_utils import get_paths, read_json, read_pickle, get_node_id
 from nbv_utils import get_discon_path, read_yaml, get_intrinsics
 from nbv_utils import get_retr, get_chain_approx, compute_points
-from nbv_utils import write_pickle
-
-def dot_prod(A, B):
-    return (A*B).sum(axis=1)
+from nbv_utils import write_pickle, dot_prod
 
 # def correct_discon_points(points, discon_map, surface_norm, MAG):
 #     for i in range(points.shape[0]):
@@ -37,13 +34,12 @@ def dot_prod(A, B):
 # but have to put it to rest as tired
 def get_occluded_points(points, z_points, surface_norm, 
                         discon_map, MAG, 
-                        discon_thresh=0.5,
-                        z_thresh = 0.0000):
+                        discon_thresh=0.5):
+    
     is_occluded = []
     for i in range(points.shape[0]):
         x0, y0 = points[i]
         dx, dy = surface_norm[i]
-        is_discon = (discon_map[y0, x0] > 0)  
 
         x1 = int(np.round(x0 + dx*MAG))
         y1 = int(np.round(y0 + dy*MAG))

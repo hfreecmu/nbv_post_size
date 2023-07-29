@@ -16,7 +16,7 @@ GREEN='\033[0;32m'
 CYAN='\033[36m'
 NC='\033[0m' # No Color
 
-VALID_BAG_TYPES=("tsdfroi" "dissim" "linear")
+VALID_BAG_TYPES=("tsdfroi" "dissim" "linear", "cluster")
 ROSBAG_RATE=5
 KILL_LIMIT=10
 
@@ -111,7 +111,11 @@ for SUB_DIR in $INPUT_DIR/*/ ; do
     #call extract images.py
     #WARNING WARNING WARNING
     #change name of this script need to change kill all command
-    python2 1_extract_images.py --data_dir ${BAG_OUT_DIR} --process_rect_images --process_joints &
+    if [ "$BAG_TYPE" = "cluster" ]; then 
+        python2 1_extract_images.py --data_dir ${BAG_OUT_DIR} --use_depth & 
+    else
+        python2 1_extract_images.py --data_dir ${BAG_OUT_DIR} --process_rect_images --process_joints & 
+    fi;
     PYTHON_PID=$!
     sleep 5
 

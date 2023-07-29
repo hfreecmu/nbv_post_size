@@ -6,6 +6,7 @@ from scipy.spatial.transform import Rotation
 import open3d
 import json
 import pickle
+from sklearn.neighbors import KDTree
 
 ###WARNING WARNING WARNING
 #any changes made here may also have to go in nbv_utils in feature_assocation repo
@@ -57,6 +58,10 @@ def get_rot_trans_inv(R, t):
     R_inv = R.T
 
     return R_inv, t_inv
+     
+#dot prod
+def dot_prod(A, B):
+    return (A*B).sum(axis=1)
 
 #get intrinsics struck from dict
 def get_intrinsics(camera_info):
@@ -182,17 +187,34 @@ def create_point_cloud(cloud_path, points, colors, normals=None, estimate_normal
 #extract point cloud using filters
 def extract_point_cloud(left_path, disparity_path, 
                         camera_info_path, transform_path, args,
-                        include_discon=False):
+                        include_discon=False,
+                        include_orig=False):
     camera_info = read_yaml(camera_info_path)
     intrinsics = get_intrinsics(camera_info)
 
     disparity = np.load(disparity_path)
+    inf_inds = np.where(disparity <= 0)
     if np.min(disparity) <= 0:
         print('WARNING: invalid disparities: ', (disparity <= 0).flatten().sum(), disparity_path)
         disparity[disparity <= 0] = 1e-6
 
     im = cv2.imread(left_path)
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+    if include_orig:
+        points_orig = compute_points(disparity, intrinsics)
+        colors_orig = im.astype(float) / 255
+
+        if args.z_only:
+            orig_nan_inds = np.where(points_orig[:, :, 2] > args.max_dist)
+        else:
+            orig_nan_inds = np.where(np.linalg.norm(points_orig, axis=2) > args.max_dist)
+
+        points_orig[orig_nan_inds] = np.nan
+        colors_orig[orig_nan_inds] = np.nan
+
+        points_orig[inf_inds] = np.nan
+        colors_orig[inf_inds] = np.nan
 
     if args.bilateral_filter:
         disparity = bilateral_filter(disparity, intrinsics, args)
@@ -205,6 +227,9 @@ def extract_point_cloud(left_path, disparity_path,
     points[nan_inds] = np.nan
     colors[nan_inds] = np.nan
 
+    points[inf_inds] = np.nan
+    colors[inf_inds] = np.nan
+
     if args.z_only:
         nan_inds = np.where(points[:, :, 2] > args.max_dist)
     else:
@@ -216,9 +241,15 @@ def extract_point_cloud(left_path, disparity_path,
     world_points = ((R @ points.reshape((-1, 3)).T).T + t).reshape(points.shape)
 
     if not include_discon:
-        return points, world_points, colors, R, t
+        to_ret = [points, world_points, colors, R, t]
     else:
-        return points, world_points, colors, R, t, discontinuity_map
+        to_ret = [points, world_points, colors, R, t, discontinuity_map]
+
+    if include_orig:
+        to_ret.append(points_orig)
+        to_ret.append(colors_orig)
+
+    return tuple(to_ret)
 
 #get paths following directory structure
 def get_paths(data_dir, indices, single=False, 
@@ -357,4 +388,65 @@ def warp_points(points, H):
     return perspective_points
 
 
+def freemans_algorithm(cloud_points, density_vals, search_rad):
+    assert cloud_points.shape[0] == density_vals.shape[0]
 
+    #make tree
+    cloud_tree = KDTree(cloud_points)
+
+    #get sorted density vals high to lowest
+    sorted_density_inds = np.argsort(-density_vals)
+
+    #create a visited array
+    visited = np.zeros((density_vals.shape[0]), dtype=np.int32)
+
+    #create is local maxima array
+    is_local_maximum = np.zeros((density_vals.shape[0]), dtype=np.int32)
+
+    #while not all nodes have been visited
+    while (np.min(visited) == 0):
+        #this is safety check
+        prev_visited = np.sum(visited)
+
+        highest_unvisited_ind = sorted_density_inds[visited[sorted_density_inds] == 0][0]
+
+        if visited[highest_unvisited_ind] != 0:
+            raise RuntimeError('Illegal highest unvisited ind')
+
+        #set to visited
+        visited[highest_unvisited_ind] = 1
+
+        #query radius around maximum
+        radius_inds = cloud_tree.query_radius(cloud_points[highest_unvisited_ind:highest_unvisited_ind+1], search_rad)
+        radius_inds = radius_inds[0]
+
+        radius_inds = radius_inds[radius_inds != highest_unvisited_ind]
+        comp_density_vals = density_vals[radius_inds]
+
+        #compare density vals
+        #if current one is highest, set is as local max
+        #set all inds lower than it as visited
+        if comp_density_vals.shape[0] == 0:
+            is_local_maximum[highest_unvisited_ind] = 1
+        elif density_vals[highest_unvisited_ind] > np.max(comp_density_vals):
+            is_local_maximum[highest_unvisited_ind] = 1
+        #if it is a tie, see if the tie is already set
+        #I am assuming this won't happen often and that there will not 
+        #be a huge string of these outside the search_rad
+        elif density_vals[highest_unvisited_ind] == np.max(comp_density_vals):
+            max_comp_density_val_inds = np.argwhere(comp_density_vals == np.max(comp_density_vals))
+            max_comp_radius_inds = radius_inds[max_comp_density_val_inds]
+            if np.max(visited[max_comp_radius_inds] == 0):
+                is_local_maximum[highest_unvisited_ind] = 1
+
+        lower_inds = radius_inds[density_vals[highest_unvisited_ind] > comp_density_vals]
+        visited[lower_inds] = 1
+
+        #this is safety check
+        new_visited = np.sum(visited)
+
+        if new_visited <= prev_visited:
+            raise RuntimeError('Invalid new/prev visited')
+
+    #return local maxima array
+    return is_local_maximum
