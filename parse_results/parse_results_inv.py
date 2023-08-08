@@ -9,7 +9,8 @@ from scipy.optimize import curve_fit
 
 from nbv_utils import read_json, write_json
 
-res_dir = '/home/frc-ag-3/harry_ws/viewpoint_planning/docker_catkin_ws/src/viewpoint_planning/exp/roi_planner_res_res'
+res_dir = '/media/frc-ag-3/umass_1/umass_2023_data/field_data/sizing_results/0_1790a8d3/bak/tsdfroi_res/2023-05-22_tsdfroi'
+title="Hand-Caliper Size vs. FVP Size"
 use_Z_score = True
 Z_score = 3
 
@@ -87,15 +88,15 @@ write_json(average_error_path, {'mae': mae,
 
 for use_a in [True, False]:
     if use_a:
-        b, a = np.polyfit(gt_sizes, cv_sizes, deg=1)
+        b, a = np.polyfit(cv_sizes, gt_sizes, deg=1)
     else: 
         def f(x, b):
             return b*x
         a = 0
-        popt, _ = curve_fit(f, gt_sizes, cv_sizes)
+        popt, _ = curve_fit(f, cv_sizes, gt_sizes)
         b = popt[0]
     
-    yfit = [a + b * xi for xi in gt_sizes]
+    yfit = [a + b * xi for xi in cv_sizes]
 
     if a < 0:
         a_string = "{:.2f}".format(-a)
@@ -104,25 +105,27 @@ for use_a in [True, False]:
     b_string = "{:.2f}".format(b)
     label = b_string + '*x - ' + a_string
 
-    r2_base = r2_score(cv_sizes, yfit)
+    r2_base = r2_score(gt_sizes, yfit)
 
-    plt.scatter(gt_sizes, cv_sizes)
-    plt.plot(gt_sizes, yfit, 'r', label=label)
-    plt.xlabel("Ground Truth Sizes (mm)")
-    plt.ylabel("Predicted Sizes (mm)")
-    plt.text(0.8, 1.01, 'r2 score: ' + "{:.3f}".format(r2_base), 
-        fontsize=10, color='k',
-        ha='left', va='bottom',
-        transform=plt.gca().transAxes)
+    plt.scatter(cv_sizes, gt_sizes)
+    plt.plot(cv_sizes, yfit, 'r', label=label)
+    plt.xlabel("Predicted Sizes (mm)")
+    plt.ylabel("Ground Truth Sizes (mm)")
+    # plt.text(0.8, 1.01, 'r2 score: ' + "{:.3f}".format(r2_base), 
+    #     fontsize=10, color='k',
+    #     ha='left', va='bottom',
+    #     transform=plt.gca().transAxes)
 
-    plt.title('Hand-Caliper Size vs. CV Size')
+    plt.title(title)
     plt.legend(loc="upper left")
     
     if use_a:
-        gt_cv_comp_path = os.path.join(res_dir, 'r2_offset.png')
+        gt_cv_comp_path = os.path.join(res_dir, 'r2_offset_inv.png')
     else:
-        gt_cv_comp_path = os.path.join(res_dir, 'r2_no_offset.png')
+        gt_cv_comp_path = os.path.join(res_dir, 'r2_no_offset_inv.png')
 
     plt.savefig(gt_cv_comp_path)
 
     plt.close()
+
+    print(r2_base)

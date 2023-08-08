@@ -201,6 +201,7 @@ def parse_args():
     parser.add_argument('--output_dir', required=True)
     parser.add_argument('--bag_type', required=True)
     parser.add_argument('--model_dir', required=True)
+    parser.add_argument('--res_dir', required=True)
     
     
     args = parser.parse_args()

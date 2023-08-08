@@ -234,6 +234,9 @@ def cluster(fruitlets, full_Rs, full_ts, opt_ret_vals, max_dist):
     #highly connected subgraph
     #TODO clusters with 2 or fewer detections will be removed
     #maybe somehow make this so that it's 1 or fewer?
+    #might not need, could maybe change the quality from > to >=
+    #TODO what do we do if spurious detection in an image? how does that filter out again?
+    #ie two nodes from same image in final cluster
     G_HCS = nx.Graph()
     sub_graphs = [G.subgraph(c).copy() for c in nx.connected_components(G)]
     for sub_graph in sub_graphs:
