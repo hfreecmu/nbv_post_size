@@ -56,63 +56,29 @@ def parse_link(link, sdf_path, model_prefixes, link_dict):
 
     link_dict[link_id] = {'scale': scale}
         
-def parse_model(model, sdf_path, gazebo_model_path, model_prefixes, link_dict):
-    model_name = model.attrib['name']
+def parse_model(model, sdf_path, gazebo_model_path, model_prefixes, model_name, link_dict):
+    if (model_name is None):
+        model_name = model.attrib['name']
+
     model_prefixes.append(model_name)
 
     for child in model:
         if child.tag == 'model':
-            parse_model(child, sdf_path, gazebo_model_path, model_prefixes.copy(), link_dict)
+            raise RuntimeError('I know I wrote to support this but why is it here?')
+            parse_model(child, sdf_path, gazebo_model_path, model_prefixes.copy(), None, link_dict)
         elif child.tag == 'link':
             parse_link(child, sdf_path, model_prefixes.copy(), link_dict)
         elif child.tag == 'include':
+            raise RuntimeError('I know I wrote to support this but why is it here?')
             parse_include(child, sdf_path, gazebo_model_path, model_prefixes.copy(), link_dict)
         else:
             continue
 
-def parse_sdf(sdf_path, gazebo_model_path, model_prefixes, link_dict):
+def parse_sdf(sdf_path, gazebo_model_path, model_prefixes, model_name, link_dict):
     tree = ET.parse(sdf_path)
     root = tree.getroot()
 
     model = search_single(root, 'model', False, sdf_path)
 
     if model != None:
-        parse_model(model, sdf_path, gazebo_model_path, model_prefixes, link_dict)
-
-def parse_include(include, sdf_path, gazebo_model_path, model_prefixes, link_dict, skip_model_ids=[]):
-    uri = search_single(include, 'uri', True, sdf_path).text
-    
-    for skip_id in skip_model_ids:
-        if skip_id in uri:
-            return
-
-    #model
-    if uri.startswith('model://'):
-        path_suffix = uri.split('model://')[1]
-        model_dir = os.path.join(gazebo_model_path, path_suffix)
-    else:
-        model_dir = uri
-
-    model_path = os.path.join(model_dir, 'model.sdf')
-
-    if not os.path.exists(model_path):
-        print('model path does not exist: ' + model_path + ', ' + sdf_path)
-        return
-
-    parse_sdf(model_path, gazebo_model_path, model_prefixes, link_dict)    
-
-def parse_world(world_path, gazebo_model_path):
-    tree = ET.parse(world_path)
-    root = tree.getroot()
-
-    world = search_single(root, 'world', True, world_path)
-    link_dict = dict()
-
-    for child in world:
-        if child.tag != 'include':
-            continue
-
-        model_prefixes = []
-        parse_include(child, world_path, gazebo_model_path, model_prefixes, link_dict, skip_model_ids=skip_model_ids)
-    
-    return link_dict
+        parse_model(model, sdf_path, gazebo_model_path, model_prefixes, model_name, link_dict)

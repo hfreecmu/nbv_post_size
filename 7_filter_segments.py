@@ -67,6 +67,7 @@ def filter(left_path, seg_path, min_area, RETR, APPROX,
         mask = np.zeros(im.shape[0:2], dtype=np.uint8)
         mask[seg_inds[:, 0], seg_inds[:, 1]] = 255
         #TODO why am I finding contours again?
+        #I think in case there is a separation
         contours, _ = cv2.findContours(mask, RETR, APPROX)
 
         filtered_contours = []
@@ -81,7 +82,7 @@ def filter(left_path, seg_path, min_area, RETR, APPROX,
         cv2.drawContours(contour_im, filtered_contours, -1, (255), -1)
 
         filtered_seg_inds = np.argwhere(contour_im > 0)
-        if filtered_seg_inds.shape[0] == 0:
+        if filtered_seg_inds.shape[0] < min_area:
             continue
     
         full_im[filtered_seg_inds[:, 0], filtered_seg_inds[:, 1]] = color

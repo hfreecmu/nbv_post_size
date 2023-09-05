@@ -90,7 +90,7 @@ for SUB_DIR in $INPUT_DIR/*/ ; do
     echo -e "${GREEN}Processing $BASE_NAME"
     FULL_LIST+=("$BASE_NAME;")
 
-    BAG_FILE="${SUB_DIR}/${BASE_NAME}.bag"
+    BAG_FILE="${SUB_DIR}/run.bag"
     
     if [ ! -f $BAG_FILE ]; then
         FAILED_LIST+=("$BASE_NAME;")
@@ -112,7 +112,7 @@ for SUB_DIR in $INPUT_DIR/*/ ; do
     #WARNING WARNING WARNING
     #change name of this script need to change kill all command
     if [ "$BAG_TYPE" = "cluster" ]; then 
-        python2 1_extract_images.py --data_dir ${BAG_OUT_DIR} --use_depth & 
+        python2 1_extract_images.py --data_dir ${BAG_OUT_DIR} --is_sim & 
     else
         python2 1_extract_images.py --data_dir ${BAG_OUT_DIR} --process_rect_images --process_joints & 
     fi;
@@ -121,7 +121,6 @@ for SUB_DIR in $INPUT_DIR/*/ ; do
 
     #play rosbag
     rosbag play -r ${ROSBAG_RATE} --clock ${BAG_FILE}
-
 
     #clean up
 

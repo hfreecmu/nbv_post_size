@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 
 from nbv_utils import read_json, write_json
 
-res_dir = '/home/frc-ag-3/harry_ws/viewpoint_planning/docker_catkin_ws/src/viewpoint_planning/exp/roi_planner_res_res'
+res_dir = '/media/frc-ag-3/umass_1/umass_2023_data/field_data/sizing_results/0_1790a8d3/tsdfroi_res/2023-05-22_tsdfroi'
 use_Z_score = True
 Z_score = 3
 

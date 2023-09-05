@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib
 
 from extract_target_centres import valid_bag_types
-from parse_sdf_world import parse_world
+from parse_sdf_world import parse_sdf
 from nbv_utils import read_json, parse_node_id
 from nbv_utils import read_pickle, write_json
 import scipy.optimize
@@ -27,11 +27,11 @@ teal_hsv = matplotlib.colors.rgb_to_hsv(teal.astype(float)/255)
 hsv_colors = np.vstack((purple_hsv, blue_hsv, orange_hsv, red_hsv, yellow_hsv, teal_hsv))
 
 def parse_exp_dirname(basename):
-    cluster_tex, cluster_num, w_0, w_1 = basename.split('_')
-    cluster_id = '_'.join([cluster_tex, cluster_num])
-    world_id = '_'.join([w_0, w_1])
 
-    return cluster_id, world_id
+    tree_id, foliage_num, target_cluster_ind, cluster_text, cluster_num  = basename.split('_')
+    cluster_id = '_'.join([cluster_text, cluster_num])
+
+    return cluster_id
 
 def get_sub_dirs(data_dir, bag_type):
     basenames = []
@@ -107,11 +107,19 @@ def insert_gt_data(gt_data, cluster_id, fruitlet_num, gt_size=None, cv_size=None
             gt_data[cluster_id][fruitlet_num]['cv_size'] = round(cv_size * 1000, 4)
 
 
-def extract_gt_label(input_dir, output_dir, basename, model_dir, gt_data):
-    _, world_id = parse_exp_dirname(basename)
+def extract_gt_label(input_dir, output_dir, basename, gazebo_model_dir, cluster_model_subdir, gt_data):
+    cluster_id = parse_exp_dirname(basename)
+    model_path = os.path.join(gazebo_model_dir, cluster_model_subdir, cluster_id, 'model.sdf')
+
+    if not os.path.exists(model_path):
+        raise RuntimeError('model path does not exist: ' + model_path)
     
-    world_path = os.path.join(input_dir, basename, world_id + '.world')
-    fruitlet_dict = parse_world(world_path, model_dir)
+
+    fruitlet_dict = dict()
+    model_prefixes = []
+    model_name = 'fruitlet_cluster_target'
+    parse_sdf(model_path, gazebo_model_dir, model_prefixes, model_name, fruitlet_dict)
+    
     fruitlet_dict_keys = list(fruitlet_dict.keys())
 
     subdir = os.path.join(output_dir, basename)
@@ -121,7 +129,7 @@ def extract_gt_label(input_dir, output_dir, basename, model_dir, gt_data):
     C = np.zeros((len(fruitlet_dict_keys), len(color_vals)))
     for i in range(len(fruitlet_dict_keys)):
         key = fruitlet_dict_keys[i]
-        gt_fruitlet_id = int(key.split('_')[2])
+        gt_fruitlet_id = int(key.split('_')[-1])
         gt_color = hsv_colors[gt_fruitlet_id]
 
         for j in range(len(color_vals)):
@@ -142,7 +150,7 @@ def extract_gt_label(input_dir, output_dir, basename, model_dir, gt_data):
         j = col_ind[ind]
         
         key = fruitlet_dict_keys[i]
-        gt_fruitlet_id = int(key.split('_')[2])
+        gt_fruitlet_id = int(key.split('_')[-1])
 
         cv_fruitlet_id, _ = color_vals[j]
 
@@ -153,13 +161,13 @@ def extract_gt_label(input_dir, output_dir, basename, model_dir, gt_data):
     write_json(annotation_path, annotation_dict)
     
 
-def extract_gt_labels_full(input_dir, output_dir, bag_type, model_dir, res_dir):
+def extract_gt_labels_full(input_dir, output_dir, bag_type, gazebo_model_dir, cluster_model_subdir, res_dir):
     basenames = get_sub_dirs(output_dir, bag_type)
     gt_data = {}
     num_spurious_dict = {}
     for basename in basenames:
         gt_data[basename] = {}
-        extract_gt_label(input_dir, output_dir, basename, model_dir, gt_data)
+        extract_gt_label(input_dir, output_dir, basename, gazebo_model_dir, cluster_model_subdir, gt_data)
 
         subdir = os.path.join(output_dir, basename)
         sizes_path = os.path.join(subdir, 'sizes', 'final_sizes.json')
@@ -199,9 +207,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_dir', required=True)
     parser.add_argument('--output_dir', required=True)
-    parser.add_argument('--bag_type', required=True)
-    parser.add_argument('--model_dir', required=True)
     parser.add_argument('--res_dir', required=True)
+    parser.add_argument('--gazebo_model_dir', default='/home/frc-ag-3/harry_ws/viewpoint_planning/docker_catkin_ws/gazebo_models')
+    parser.add_argument('--cluster_model_subdir', default='exp_clusters')
+    parser.add_argument('--bag_type', default='cluster')
     
     
     args = parser.parse_args()
@@ -212,7 +221,8 @@ if __name__ == "__main__":
     input_dir = args.input_dir
     output_dir = args.output_dir
     bag_type = args.bag_type
-    model_dir = args.model_dir
+    gazebo_model_dir = args.gazebo_model_dir
+    cluster_model_subdir = args.cluster_model_subdir
     res_dir = args.res_dir
 
     if not os.path.exists(input_dir):
@@ -225,10 +235,10 @@ if __name__ == "__main__":
         raise RuntimeError('Invalid bag_type: ' + bag_type + 
                            '. Choose one of ' + str(valid_bag_types) + '.')
     
-    if not os.path.exists(model_dir):
-        raise RuntimeError('model_dir does not exist: ' + model_dir)
+    if not os.path.exists(gazebo_model_dir):
+        raise RuntimeError('gazebo_model_dir does not exist: ' + gazebo_model_dir)
     
     if not os.path.exists(res_dir):
         raise RuntimeError('res_dir does not exist: ' + res_dir)
     
-    extract_gt_labels_full(input_dir, output_dir, bag_type, model_dir, res_dir)
+    extract_gt_labels_full(input_dir, output_dir, bag_type, gazebo_model_dir, cluster_model_subdir, res_dir)

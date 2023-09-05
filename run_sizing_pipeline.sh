@@ -89,7 +89,7 @@ for SUB_DIR in $DATA_DIR/*/ ; do
     #step 3 extract disparities
     echo -e "${GREEN}Extracting disparities for $BASE_NAME"
     if [ "$BAG_TYPE" = "cluster" ]; then 
-        python3 3_extract_disparities_from_depth.py --data_dir $SUB_DIR
+        echo "Sim trial. Disparities already extracted."
     else
         python3 3_extract_disparities.py --data_dir $SUB_DIR --raft_restore_ckpt $RAFT_CKPT
     fi;

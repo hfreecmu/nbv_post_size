@@ -1,7 +1,6 @@
 import argparse
 import os
 import rosbag
-import numpy as np
 
 from nbv_utils import write_json, create_point_cloud, create_sphere_point_cloud
 
@@ -14,19 +13,21 @@ def get_target_centre(bag_file):
 
     t_max = -1
     target_centre = None
+    extracted_radius = None
     for _, msg, t in bag.read_messages(topics=[topic_name]):
         if t.to_sec() < t_max:
             continue
 
         t_max = t.to_sec()
         target_centre = msg.pose.position
+        extracted_radius = msg.scale.x / 2
 
     if target_centre is not None:
         target_centre = [target_centre.x, target_centre.y, target_centre.z]
 
-    return target_centre
+    return target_centre, extracted_radius
 
-def extract_target_centres(input_dir, output_dir, bag_type, radius):
+def extract_target_centres(input_dir, output_dir, bag_type, default_radius, use_extracted_radius):
     for basename in os.listdir(input_dir):
         if not bag_type in basename:
             continue
@@ -40,15 +41,20 @@ def extract_target_centres(input_dir, output_dir, bag_type, radius):
             print('No output dir for: ' + basename)
             continue
 
-        bag_file = os.path.join(sub_input_dir, basename + '.bag')
+        bag_file = os.path.join(sub_input_dir, 'run.bag')
         if not os.path.exists(bag_file):
             print('No bag file for: ' + basename)
             continue
 
-        target_centre = get_target_centre(bag_file)
+        target_centre, extracted_radius = get_target_centre(bag_file)
         if target_centre is None:
             print('No target centre for: ' + basename)
             continue
+
+        if use_extracted_radius:
+            radius = extracted_radius
+        else:
+            radius = default_radius
 
         fruitlet_dict = {
             "radius": radius,
@@ -75,7 +81,7 @@ def parse_args():
     parser.add_argument('--output_dir', required=True)
     parser.add_argument('--bag_type', required=True)
 
-    parser.add_argument('--radius', type=float, default=0.06)
+    parser.add_argument('--default_radius', type=float, default=0.06)
 
     args = parser.parse_args()
     return args
@@ -85,7 +91,7 @@ if __name__ == "__main__":
     input_dir = args.input_dir
     output_dir = args.output_dir
     bag_type = args.bag_type
-    radius = args.radius
+    default_radius = args.default_radius
 
     if not os.path.exists(input_dir):
         raise RuntimeError('input_dir does not exist: ' + input_dir)
@@ -97,5 +103,10 @@ if __name__ == "__main__":
         raise RuntimeError('Invalid bag_type: ' + bag_type + 
                            '. Choose one of ' + str(valid_bag_types) + '.')
     
-    extract_target_centres(input_dir, output_dir, bag_type, radius)
+    if bag_type == 'cluster':
+        use_extracted_radius = True
+    else:
+        use_extracted_radius = False
+
+    extract_target_centres(input_dir, output_dir, bag_type, default_radius, use_extracted_radius)
     
