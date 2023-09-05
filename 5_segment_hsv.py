@@ -79,8 +79,6 @@ def segment_image_hsv(image_path, pointcloud_path, hsv_colors=hsv_colors,
     #dists = np.linalg.norm(hsv_image_reshape - bg_hsv, axis=1) #hsv_image_reshape.shape[0]
     #bg_inds = np.argwhere(dists < bg_thresh)[:, 0]
 
-    #TODO not sure
-
     seg_ids = np.zeros((hsv_image_reshape.shape[0]), dtype=np.uint8) + 255
     seg_ids[seg_inds] = min_inds[seg_inds]
 

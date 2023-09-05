@@ -231,10 +231,6 @@ def cluster(fruitlets, full_Rs, full_ts, opt_ret_vals, max_dist, include_eq):
                         (c_1, image_inds_1, seg_inds_1), 
                         G, max_dist, node_set)
 
-    #highly connected subgraph
-    #TODO clusters with 2 or fewer detections will be removed
-    #maybe somehow make this so that it's 1 or fewer?
-    #might not need, could maybe change the quality from > to >=
     G_HCS = nx.Graph()
     sub_graphs = [G.subgraph(c).copy() for c in nx.connected_components(G)]
     for sub_graph in sub_graphs:

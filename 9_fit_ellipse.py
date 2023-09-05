@@ -8,29 +8,6 @@ from nbv_utils import get_discon_path, read_yaml, get_intrinsics
 from nbv_utils import get_retr, get_chain_approx, compute_points
 from nbv_utils import write_pickle, dot_prod
 
-# def correct_discon_points(points, discon_map, surface_norm, MAG):
-#     for i in range(points.shape[0]):
-#         x0, y0 = points[i]
-#         dx, dy = surface_norm[i]
-
-#         for d_ind in range(1, 1000):
-#             y0_use = int(np.round(y0))
-#             x0_use = int(np.round(x0))
-#             discons = discon_map[y0_use-MAG:y0_use+MAG+1, x0_use-MAG:x0_use+MAG+1] / 255
-#             is_discon = discons.mean() > 0.5
-
-#             if not is_discon:
-#                 break
-
-#             y0 = y0 - d_ind*dy
-#             x0 = x0 - d_ind*dx
-
-#         if is_discon:
-#             raise RuntimeError('Still discon safety guard')
-
-#         points[i] = [x0, y0]
-
-#TODO must be better way to do this 
 # but have to put it to rest as tired
 def get_occluded_points(points, z_points, surface_norm, 
                         discon_map, MAG, 

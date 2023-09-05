@@ -26,11 +26,6 @@ def filter(left_path, seg_path, min_area, RETR, APPROX,
     for i in range(len(segmentations)):
         seg_inds, score = segmentations[i]
 
-        #filter seg inds not outside of sphere
-        #filter seg inds that have invalid disparity?
-        #do we need to filter or just include all?
-        #TODO do I want to do the latter?
-        #decided we are not modifying fruitlet here
         seg_points = world_points[seg_inds[:, 0], seg_inds[:, 1]]
         non_nan_seg_points = seg_points[~np.isnan(seg_points).any(axis=1)]
         if non_nan_seg_points.shape[0] == 0:

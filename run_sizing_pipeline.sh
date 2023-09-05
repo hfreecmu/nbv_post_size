@@ -118,7 +118,7 @@ for SUB_DIR in $DATA_DIR/*/ ; do
 
     #step 8 associate
     echo -e "${GREEN}Associating for $BASE_NAME"
-    python3 8_associate.py --data_dir $SUB_DIR
+    python3 8_associate.py --data_dir $SUB_DIR --include_eq
 
     #step 9 fit ellipses
     echo -e "${GREEN}Fitting ellipses for $BASE_NAME"
