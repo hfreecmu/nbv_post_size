@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import cv2
 import distinctipy
 
-from nbv_utils import get_paths, read_json, get_node_id
+from nbv_utils import get_paths, read_json, get_node_id, parse_node_id
 from nbv_utils import read_pickle, create_point_cloud, write_json, get_rot_trans_inv
 
 from hcs import HCS
@@ -235,8 +235,6 @@ def cluster(fruitlets, full_Rs, full_ts, opt_ret_vals, max_dist):
     #TODO clusters with 2 or fewer detections will be removed
     #maybe somehow make this so that it's 1 or fewer?
     #might not need, could maybe change the quality from > to >=
-    #TODO what do we do if spurious detection in an image? how does that filter out again?
-    #ie two nodes from same image in final cluster
     G_HCS = nx.Graph()
     sub_graphs = [G.subgraph(c).copy() for c in nx.connected_components(G)]
     for sub_graph in sub_graphs:
@@ -251,9 +249,33 @@ def cluster(fruitlets, full_Rs, full_ts, opt_ret_vals, max_dist):
     for _class, _cluster in enumerate(hcs_sub_graphs):
         c = list(_cluster.nodes)
 
-        cluster_dict['clusters'][_class] = c
-
+        ### Clean up cluster to make sure not two nodes from same image
+        image_ind_dict = {}
         for node_id in c:
+            image_ind, _ = parse_node_id(node_id)
+
+            if image_ind not in image_ind_dict:
+                image_ind_dict[image_ind] = node_id
+            else:
+                node_a = node_id
+                node_b = image_ind_dict[image_ind]
+
+                num_edges_a = len(_cluster.edges(node_a))
+                num_edges_b = len(_cluster.edges(node_b))
+
+                #TODO: if equal can we check distance or number of det fruitlets or something?
+                if num_edges_a > num_edges_b:
+                    node_id = node_a
+                else:
+                    node_id = node_b
+
+                image_ind_dict[image_ind] = node_id
+        ###
+
+        cluster_dict['clusters'][_class] = c
+        for image_ind in image_ind_dict:
+            node_id = image_ind_dict[image_ind]
+
             if node_id in cluster_dict['fruitlets']:
                 raise RuntimeError('node id appeared twice: ' + node_id)
             cluster_dict['fruitlets'][node_id] = _class
