@@ -154,7 +154,7 @@ def parse_args():
     parser.add_argument('--min_area', type=int, default=100)
     parser.add_argument('--retr', type=str, default='LIST')
     parser.add_argument('--chain_approx', type=str, default='SIMPLE')
-    parser.add_argument('--radius_cutoff_pct', type=float, default=5.0)
+    parser.add_argument('--radius_cutoff_pct', type=float, default=10.0)
     
 
     args = parser.parse_args()

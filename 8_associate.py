@@ -203,7 +203,7 @@ def add_edges(nodes_0, nodes_1, G, max_dist, node_set):
 
             G.add_edge(node_id_0, node_id_1)
 
-def cluster(fruitlets, full_Rs, full_ts, opt_ret_vals, max_dist):
+def cluster(fruitlets, full_Rs, full_ts, opt_ret_vals, max_dist, include_eq):
     num_fruitlets = len(fruitlets)
 
     #build the graph
@@ -238,7 +238,7 @@ def cluster(fruitlets, full_Rs, full_ts, opt_ret_vals, max_dist):
     G_HCS = nx.Graph()
     sub_graphs = [G.subgraph(c).copy() for c in nx.connected_components(G)]
     for sub_graph in sub_graphs:
-        sub_graph = HCS(sub_graph)
+        sub_graph = HCS(sub_graph, include_eq)
 
         G_HCS.add_edges_from(sub_graph.edges())
 
@@ -381,7 +381,7 @@ def associate(data_dir, args):
         transform_path = os.path.join(associations_dir, str(image_inds[i]) + '_transform.npy')
         np.save(transform_path, t)
 
-    cluster_dict, G, G_HCS = cluster(full_fruitlets, full_Rs, full_ts, ret_vals, args.cluster_max_dist)
+    cluster_dict, G, G_HCS = cluster(full_fruitlets, full_Rs, full_ts, ret_vals, args.cluster_max_dist, args.include_eq)
 
     g_path = os.path.join(associations_dir, 'pre_cluster_graph.png')
     nx.draw(G)
@@ -412,6 +412,8 @@ def parse_args():
 
     parser.add_argument('--f_scale', type=float, default=0.007)
     parser.add_argument('--cluster_max_dist', type=float, default=0.007)
+
+    parser.add_argument('--include_eq', action='store_true')
 
     args = parser.parse_args()
     return args
