@@ -355,6 +355,7 @@ def get_chain_approx(chain_approx):
     raise RuntimeError('Invalid chain_approx: ' + chain_approx)
 
 #create sphere cloud
+#TODO is this correct? Different than my c++ version
 def create_sphere_point_cloud(center, radius, num_points):
     points = []
     colors = []

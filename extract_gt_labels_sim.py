@@ -7,7 +7,7 @@ import matplotlib
 from extract_target_centres import valid_bag_types
 from parse_sdf_world import parse_sdf
 from nbv_utils import read_json, parse_node_id
-from nbv_utils import read_pickle, write_json
+from nbv_utils import read_pickle, write_json, read_yaml
 import scipy.optimize
 
 purple = np.array([255, 100, 255])
@@ -44,8 +44,8 @@ def get_sub_dirs(data_dir, bag_type):
             continue
     
         clusters_path = os.path.join(subdir, 'associations', 'clusters.json')
-        if not os.path.exists(clusters_path):
-            raise RuntimeError('No clusters path for: ' + subdir)
+        #if not os.path.exists(clusters_path):
+            #raise RuntimeError('No clusters path for: ' + subdir)
             #print('No clusters for: ', subdir_name)
             #continue
 
@@ -165,7 +165,20 @@ def extract_gt_labels_full(input_dir, output_dir, bag_type, gazebo_model_dir, cl
     basenames = get_sub_dirs(output_dir, bag_type)
     gt_data = {}
     num_spurious_dict = {}
+
+    num_succ = 0
+    num_unsucc = 0
     for basename in basenames:
+        success_file = os.path.join(input_dir, basename, 'success.yml')
+        success_yml = read_yaml(success_file)
+        success = success_yml['sucess']
+
+        if success:
+            num_succ += 1
+        else:
+            num_unsucc += 1
+            continue
+
         gt_data[basename] = {}
         extract_gt_label(input_dir, output_dir, basename, gazebo_model_dir, cluster_model_subdir, gt_data)
 
@@ -196,7 +209,9 @@ def extract_gt_labels_full(input_dir, output_dir, bag_type, gazebo_model_dir, cl
     
     new_data_dict = {
         'size_data': gt_data,
-        'num_spurious': num_spurious_dict
+        'num_spurious': num_spurious_dict,
+        'successful_exps': num_succ,
+        'unusccessful_exps': num_unsucc
     }
 
 
