@@ -56,27 +56,29 @@ def filter(left_path, seg_path, min_area, RETR, APPROX,
         seg_inds = np.argwhere(seg_ids == i)
         _, score = segmentations[i]
 
-        if seg_inds.shape[0] < min_area:
+        if seg_inds.shape[0] == 0:#< min_area:
             continue
 
-        mask = np.zeros(im.shape[0:2], dtype=np.uint8)
-        mask[seg_inds[:, 0], seg_inds[:, 1]] = 255
-        #TODO why am I finding contours again?
-        #I think in case there is a separation
-        contours, _ = cv2.findContours(mask, RETR, APPROX)
+        # mask = np.zeros(im.shape[0:2], dtype=np.uint8)
+        # mask[seg_inds[:, 0], seg_inds[:, 1]] = 255
+        # #TODO why am I finding contours again?
+        # #I think in case there is a separation
+        # contours, _ = cv2.findContours(mask, RETR, APPROX)
 
-        filtered_contours = []
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area < min_area:
-                continue
+        # filtered_contours = []
+        # for contour in contours:
+        #     area = cv2.contourArea(contour)
+        #     if area < min_area:
+        #         continue
 
-            filtered_contours.append(contour)
+        #     filtered_contours.append(contour)
 
-        contour_im = np.zeros(im.shape[0:2], dtype=np.uint8)
-        cv2.drawContours(contour_im, filtered_contours, -1, (255), -1)
+        # contour_im = np.zeros(im.shape[0:2], dtype=np.uint8)
+        # cv2.drawContours(contour_im, filtered_contours, -1, (255), -1)
 
-        filtered_seg_inds = np.argwhere(contour_im > 0)
+        # filtered_seg_inds = np.argwhere(contour_im > 0)
+
+        filtered_seg_inds = seg_inds
         if filtered_seg_inds.shape[0] < min_area:
             continue
     
@@ -149,7 +151,7 @@ def parse_args():
     parser.add_argument('--min_area', type=int, default=100)
     parser.add_argument('--retr', type=str, default='LIST')
     parser.add_argument('--chain_approx', type=str, default='SIMPLE')
-    parser.add_argument('--radius_cutoff_pct', type=float, default=10.0)
+    parser.add_argument('--radius_cutoff_pct', type=float, default=5.0)
     
 
     args = parser.parse_args()

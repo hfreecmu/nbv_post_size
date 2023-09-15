@@ -39,8 +39,8 @@ def size_fruitlet(im, disp_path, cam_info_path, seg_inds,
     seg_inds = seg_inds[good_seg_points]
 
     disp_vals = disparity[seg_inds[:, 0], seg_inds[:, 1]]
-    disp = np.median(disp_vals)
-    #disp = np.max(disp_vals)
+    #disp = np.median(disp_vals)
+    disp = np.max(disp_vals)
 
     baseline = -intrinsics[0]
     size = baseline * width / disp

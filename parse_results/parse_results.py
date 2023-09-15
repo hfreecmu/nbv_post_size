@@ -1,6 +1,7 @@
 import sys
 sys.path.append('/home/frc-ag-3/harry_ws/fruitlet_2023/scripts/nbv')
 
+import argparse
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,9 +10,42 @@ from scipy.optimize import curve_fit
 
 from nbv_utils import read_json, write_json
 
-res_dir = '/media/frc-ag-3/umass_1/umass_2023_data/field_data/sizing_results/0_1790a8d3/tsdfroi_res/2023-05-22_tsdfroi'
-use_Z_score = True
-Z_score = 3
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--res_dir', required=True)
+    parser.add_argument('--res_type', required=True)
+    parser.add_argument('--is_sim', action='store_true')
+
+    parser.add_argument('--use_z_score', action='store_false')
+    parser.add_argument('--z_score', type=int, default=3)
+
+    args = parser.parse_args()
+    return args
+
+
+title_dict = {
+    'linear_sampler': "Linear Sample Size vs. REPL_STRING Size",
+    'nag_fvp_viewpoint_planner': "NAG FVP Size vs. REPL_STRING Size",
+    'random_sampler': "Random Sample Size vs. REPL_STRING Size",
+    'roi_viewpoint_planner': "FVP Size vs. REPL_STRING Size",
+    'rvp_low_res_viewpoint_planner': "RVP Size vs. REPL_STRING Size",
+    'sm_fvp_low_res_viewpoint_planner': "SM FVP Size vs. REPL_STRING Size"
+}
+
+args = parse_args()
+
+res_dir = args.res_dir
+res_type = args.res_type
+is_sim = args.is_sim
+use_Z_score = args.use_z_score
+Z_score = args.z_score
+
+if is_sim:
+    REPL_TILE = "Ground Truth"
+else:
+    REPL_TILE = "Hand-Caliper"
+
+title = title_dict[res_type].replace('REPL_STRING', REPL_TILE)
 
 sizing_results_path = os.path.join(res_dir, 'sizing_results.json')
 sizing_results = read_json(sizing_results_path)
@@ -110,19 +144,29 @@ for use_a in [True, False]:
     plt.plot(gt_sizes, yfit, 'r', label=label)
     plt.xlabel("Ground Truth Sizes (mm)")
     plt.ylabel("Predicted Sizes (mm)")
-    plt.text(0.8, 1.01, 'r2 score: ' + "{:.3f}".format(r2_base), 
-        fontsize=10, color='k',
-        ha='left', va='bottom',
-        transform=plt.gca().transAxes)
+    # plt.text(0.8, 1.01, 'r2 score: ' + "{:.3f}".format(r2_base), 
+    #     fontsize=10, color='k',
+    #     ha='left', va='bottom',
+    #     transform=plt.gca().transAxes)
 
-    plt.title('Hand-Caliper Size vs. CV Size')
+    plt.title(title)
     plt.legend(loc="upper left")
     
     if use_a:
         gt_cv_comp_path = os.path.join(res_dir, 'r2_offset.png')
+        metrics_path = os.path.join(res_dir, 'r2_offset.json')
     else:
         gt_cv_comp_path = os.path.join(res_dir, 'r2_no_offset.png')
+        metrics_path = os.path.join(res_dir, 'r2_no_offset.json')
 
     plt.savefig(gt_cv_comp_path)
 
     plt.close()
+
+    metrics = {
+        "r2": r2_base,
+        "b": b_string,
+        "a": a_string
+    }
+
+    write_json(metrics_path, metrics)

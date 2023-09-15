@@ -63,13 +63,13 @@ if [ ! -f $SEG_MODEL_PATH ]; then
     exit 1
 fi
 
-read -p "$(echo -e ${CYAN}Would you like to continue? Press Enter, Space, or Tab. $'\n> ')" -n 1 -r KEY
-echo
+# read -p "$(echo -e ${CYAN}Would you like to continue? Press Enter, Space, or Tab. $'\n> ')" -n 1 -r KEY
+# echo
 
-if [[ $KEY != "" ]]; then 
-    echo -e "${RED}Cancelling." >&2
-    exit 1
-fi
+# if [[ $KEY != "" ]]; then 
+#     echo -e "${RED}Cancelling." >&2
+#     exit 1
+# fi
 
 for SUB_DIR in $DATA_DIR/*/ ; do
     BASE_NAME=$(basename "$SUB_DIR")
@@ -82,7 +82,7 @@ for SUB_DIR in $DATA_DIR/*/ ; do
 
     #don't need 1 as did already
 
-    #step 2 get _image idss
+    #step 2 get _image ids
     echo -e "${GREEN}Getting image ids for $BASE_NAME"
     python3 2_get_image_ids.py --data_dir $SUB_DIR
 
@@ -118,7 +118,7 @@ for SUB_DIR in $DATA_DIR/*/ ; do
 
     #step 8 associate
     echo -e "${GREEN}Associating for $BASE_NAME"
-    python3 8_associate.py --data_dir $SUB_DIR --include_eq
+    python3 8_associate.py --data_dir $SUB_DIR #--include_eq
 
     #step 9 fit ellipses
     echo -e "${GREEN}Fitting ellipses for $BASE_NAME"

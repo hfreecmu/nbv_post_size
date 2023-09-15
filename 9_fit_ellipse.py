@@ -71,7 +71,7 @@ def fit_ellipse_image(clusters, ellipse_dict, output_dir,
     bad_points = np.isnan(cam_points).any(axis=2)
     im[bad_points] = [0, 0, 0]
 
-    occ_im = im.copy()
+    #occ_im = im.copy()
     ellipse_im = im.copy()
 
     for seg_id in range(len(segmentations)):
@@ -82,94 +82,103 @@ def fit_ellipse_image(clusters, ellipse_dict, output_dir,
         if node_id in ellipse_dict:
             raise RuntimeError('node_id in ellipse dict already: ' + node_id)
 
-        seg_inds, _ = segmentations[seg_id]
+        seg_inds_orig, _ = segmentations[seg_id]
         #when we fit contours we want the original image
         #just cause discontinuities can break it apart
-        seg_inds_orig = seg_inds.copy()
+        #seg_inds_orig = seg_inds.copy()
 
         #remove discon and far away points from seg inds
-        seg_points = cam_points[seg_inds[:, 0], seg_inds[:, 1]]
-        good_seg_points = ~np.isnan(seg_points).any(axis=1)
-        seg_inds = seg_inds[good_seg_points]
+        # seg_points = cam_points[seg_inds[:, 0], seg_inds[:, 1]]
+        # good_seg_points = ~np.isnan(seg_points).any(axis=1)
+        # seg_inds = seg_inds[good_seg_points]
 
         #find contours from ALL orig seg points
-        mask = np.zeros(im.shape[0:2], dtype=np.uint8)
-        mask[seg_inds_orig[:, 0], seg_inds_orig[:, 1]] = 255
-        contours, _ = cv2.findContours(mask, RETR, APPROX)
+        #mask = np.zeros(im.shape[0:2], dtype=np.uint8)
+        #mask[seg_inds_orig[:, 0], seg_inds_orig[:, 1]] = 255
+        #contours, _ = cv2.findContours(mask, RETR, APPROX)
 
-        if len(contours) > 1:
-            print('Too many contours for ' + node_id + '. Skipping')
-            continue
+        silly_im = np.zeros((1080, 1440))
+        silly_im[seg_inds_orig[:, 0], seg_inds_orig[:, 1]] = 1
+        hull_points = np.column_stack(np.where(silly_im.T > 0))
 
-        #going to assume they are in a circle
-        #we DO NOT filter contour points as that effected
-        #surface normals and what not
-        #plus ellipses looked better
-        #if we want to, look at the debug script
-        contour = contours[0]
-        points = np.array(contour)
-        points = points[:, 0, :]
+        hull = cv2.convexHull(hull_points)
+        ellipse = cv2.fitEllipse(hull)
 
-        num_points = points.shape[0]
-        n_inds = np.arange(num_points)
-        neg_inds = (n_inds - 1) % num_points
-        pos_inds = (n_inds + 1) % num_points
+        # # if len(contours) > 1:
+        # #     print('Too many contours for ' + node_id + '. Skipping')
+        # #     continue
 
-        norm_prep_vecs = (points[pos_inds] - points[neg_inds])
-        norm_norms = np.linalg.norm(norm_prep_vecs, axis=1)
+        # #going to assume they are in a circle
+        # #we DO NOT filter contour points as that effected
+        # #surface normals and what not
+        # #plus ellipses looked better
+        # #if we want to, look at the debug script
+        # #contour = contours[0]
+        # contour = hull
+        # points = np.array(contour)
+        # points = points[:, 0, :]
 
-        #filter out norms that are 0. This can happen if there's 
-        #a single pixel in one direction
-        bad_norm_vals = (norm_norms == 0)
-        norm_prep_vecs = norm_prep_vecs[~bad_norm_vals]
-        norm_norms = norm_norms[~bad_norm_vals]
-        points = points[~bad_norm_vals]
+        # num_points = points.shape[0]
+        # n_inds = np.arange(num_points)
+        # neg_inds = (n_inds - 1) % num_points
+        # pos_inds = (n_inds + 1) % num_points
 
-        norm_prep_vecs = norm_prep_vecs / np.linalg.norm(norm_prep_vecs, axis=1).reshape((-1, 1))
-        surface_norm = np.zeros_like(norm_prep_vecs)
-        surface_norm[:, 0] = norm_prep_vecs[:, 1]
-        surface_norm[:, 1] = -norm_prep_vecs[:, 0]
+        # norm_prep_vecs = (points[pos_inds] - points[neg_inds])
+        # norm_norms = np.linalg.norm(norm_prep_vecs, axis=1)
 
-        centroid = np.mean(points, axis=0)
-        centroid_vec = centroid - points
-        centroid_vec = centroid_vec / np.linalg.norm(centroid_vec, axis=1).reshape((-1, 1))
+        # #filter out norms that are 0. This can happen if there's 
+        # #a single pixel in one direction
+        # bad_norm_vals = (norm_norms == 0)
+        # norm_prep_vecs = norm_prep_vecs[~bad_norm_vals]
+        # norm_norms = norm_norms[~bad_norm_vals]
+        # points = points[~bad_norm_vals]
 
-        #want to point opposite direction or centroid
-        neg_dot_inds = dot_prod(surface_norm, centroid_vec) > 0
-        surface_norm[neg_dot_inds] = -surface_norm[neg_dot_inds]
+        # norm_prep_vecs = norm_prep_vecs / np.linalg.norm(norm_prep_vecs, axis=1).reshape((-1, 1))
+        # surface_norm = np.zeros_like(norm_prep_vecs)
+        # surface_norm[:, 0] = norm_prep_vecs[:, 1]
+        # surface_norm[:, 1] = -norm_prep_vecs[:, 0]
 
-        is_occluded = get_occluded_points(points, z_points, surface_norm, discon_map, MAG)
+        # centroid = np.mean(points, axis=0)
+        # centroid_vec = centroid - points
+        # centroid_vec = centroid_vec / np.linalg.norm(centroid_vec, axis=1).reshape((-1, 1))
 
-        #vis occluded points
-        for i in range(points.shape[0]):
-            x0, y0 = points[i]
-            if is_occluded[i]:
-                color = (0, 0, 255)
-            else:
-                color = (255, 0, 0)
+        # #want to point opposite direction or centroid
+        # neg_dot_inds = dot_prod(surface_norm, centroid_vec) > 0
+        # surface_norm[neg_dot_inds] = -surface_norm[neg_dot_inds]
 
-            cv2.circle(occ_im, (x0,y0), radius=0, color=color, thickness=-1)
+        # is_occluded = get_occluded_points(points, z_points, surface_norm, discon_map, MAG)
 
-        #don't ellipse fit if too many points out
-        occ_rat = 1 - np.sum(is_occluded) / is_occluded.shape[0]
+        # #vis occluded points
+        # for i in range(points.shape[0]):
+        #     x0, y0 = points[i]
+        #     if is_occluded[i]:
+        #         color = (0, 0, 255)
+        #     else:
+        #         color = (255, 0, 0)
 
-        if occ_rat < occ_thresh:
-            continue
+        #     cv2.circle(occ_im, (x0,y0), radius=0, color=color, thickness=-1)
 
-        #fit the ellipse
-        ellipse_points = points[~is_occluded]
-        ellipse_points = np.expand_dims(ellipse_points, axis=1)
-        ellipse = cv2.fitEllipse(ellipse_points)
+        # #don't ellipse fit if too many points out
+        # occ_rat = 1 - np.sum(is_occluded) / is_occluded.shape[0]
+
+        # if occ_rat < occ_thresh:
+        #     continue
+
+        # #fit the ellipse
+        # ellipse_points = points[~is_occluded]
+        # ellipse_points = np.expand_dims(ellipse_points, axis=1)
+        # ellipse = cv2.fitEllipse(ellipse_points)
 
         #vis ellipse
         cv2.ellipse(ellipse_im, ellipse, (255, 0, 0), 2)
 
         #add to ellipse dict
         ellipse_dict[node_id] = {"ellipse": ellipse,
-                                 "occ_rat": 1 - occ_rat}
+                                 #"occ_rat": 1 - occ_rat}
+                                 "occ_rat": 0}
 
-    occ_im_path= os.path.join(output_dir, str(image_ind) + '_occ_im.png')
-    cv2.imwrite(occ_im_path, occ_im)
+    #occ_im_path= os.path.join(output_dir, str(image_ind) + '_occ_im.png')
+    #cv2.imwrite(occ_im_path, occ_im)
 
     ellipse_im_path = os.path.join(output_dir, str(image_ind) + '_ellipse_im.png')
     cv2.imwrite(ellipse_im_path, ellipse_im)

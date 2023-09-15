@@ -70,13 +70,13 @@ else
     exit 1
 fi
 
-read -p "$(echo -e ${CYAN}Would you like to continue? Press Enter, Space, or Tab. $'\n> ')" -n 1 -r KEY
-echo
+# read -p "$(echo -e ${CYAN}Would you like to continue? Press Enter, Space, or Tab. $'\n> ')" -n 1 -r KEY
+# echo
 
-if [[ $KEY != "" ]]; then 
-    echo -e "${RED}Cancelling." >&2
-    exit 1
-fi
+# if [[ $KEY != "" ]]; then 
+#     echo -e "${RED}Cancelling." >&2
+#     exit 1
+# fi
 
 FAILED_LIST=()
 FULL_LIST=()

@@ -28,7 +28,11 @@ hsv_colors = np.vstack((purple_hsv, blue_hsv, orange_hsv, red_hsv, yellow_hsv, t
 
 def parse_exp_dirname(basename):
 
-    tree_id, foliage_num, target_cluster_ind, cluster_text, cluster_num  = basename.split('_')
+    tree_id, foliage_num, cluster_text, cluster_num  = basename.split('_')
+
+    cluster_num_int = int(cluster_num)
+    cluster_num  = "{:06d}".format(cluster_num_int)
+
     cluster_id = '_'.join([cluster_text, cluster_num])
 
     return cluster_id
@@ -109,6 +113,7 @@ def insert_gt_data(gt_data, cluster_id, fruitlet_num, gt_size=None, cv_size=None
 
 def extract_gt_label(input_dir, output_dir, basename, gazebo_model_dir, cluster_model_subdir, gt_data):
     cluster_id = parse_exp_dirname(basename)
+
     model_path = os.path.join(gazebo_model_dir, cluster_model_subdir, cluster_id, 'model.sdf')
 
     if not os.path.exists(model_path):
@@ -163,6 +168,7 @@ def extract_gt_label(input_dir, output_dir, basename, gazebo_model_dir, cluster_
 
 def extract_gt_labels_full(input_dir, output_dir, bag_type, gazebo_model_dir, cluster_model_subdir, res_dir):
     basenames = get_sub_dirs(output_dir, bag_type)
+
     gt_data = {}
     num_spurious_dict = {}
 

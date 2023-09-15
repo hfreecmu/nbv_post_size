@@ -7,7 +7,6 @@ skip_model_ids = ['sun',
                   'dirt',
                   'Apriltag',
                   'tree']
-skip_model_uris = ['april_tags']
 
 def search_single(node, tag_id, throw_error, sdf_path):
     res = None

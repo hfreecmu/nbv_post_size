@@ -27,7 +27,7 @@ def get_target_centre(bag_file):
 
     return target_centre, extracted_radius
 
-def extract_target_centres(input_dir, output_dir, bag_type, default_radius, use_extracted_radius):
+def extract_target_centres(input_dir, output_dir, bag_type, default_radius, use_extracted_radius, min_radius):
     for basename in os.listdir(input_dir):
         if not bag_type in basename:
             continue
@@ -56,6 +56,9 @@ def extract_target_centres(input_dir, output_dir, bag_type, default_radius, use_
         else:
             radius = default_radius
 
+        if radius < min_radius:
+            radius = min_radius
+
         fruitlet_dict = {
             "radius": radius,
             'centre': target_centre
@@ -82,6 +85,7 @@ def parse_args():
     parser.add_argument('--bag_type', required=True)
 
     parser.add_argument('--default_radius', type=float, default=0.06)
+    parser.add_argument('--min_radius', type=float, default=0.05)
 
     args = parser.parse_args()
     return args
@@ -92,6 +96,7 @@ if __name__ == "__main__":
     output_dir = args.output_dir
     bag_type = args.bag_type
     default_radius = args.default_radius
+    min_radius = args.min_radius
 
     if not os.path.exists(input_dir):
         raise RuntimeError('input_dir does not exist: ' + input_dir)
@@ -108,5 +113,5 @@ if __name__ == "__main__":
     else:
         use_extracted_radius = False
 
-    extract_target_centres(input_dir, output_dir, bag_type, default_radius, use_extracted_radius)
+    extract_target_centres(input_dir, output_dir, bag_type, default_radius, use_extracted_radius, min_radius)
     

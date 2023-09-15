@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 
 from nbv_utils import read_json, write_json
 
-res_dir = '/home/frc-ag-3/harry_ws/viewpoint_planning/docker_catkin_ws/src/viewpoint_planning/exp/res_res/roi_viewpoint_planner'
+res_dir = '/home/frc-ag-3/harry_ws/viewpoint_planning/docker_catkin_ws/src/viewpoint_planning/exp/res/random_sampler_res'
 title="Hand-Caliper Size vs. FVP Size"
 use_Z_score = True
 Z_score = 3
