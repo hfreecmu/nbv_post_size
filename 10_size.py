@@ -126,6 +126,17 @@ def size_fruitlets(data_dir, bin_res):
     path_ret = get_paths(data_dir, indices=None, use_filter_segs=True, include_cloud=True, use_filter_indices=True)
     image_inds, left_paths, disp_paths, cam_info_paths, _, seg_paths, cloud_cam_paths, _ = path_ret
 
+    if len(image_inds) > 4:
+        #rand_inds = np.random.choice(len(image_inds), size=4, replace=False)
+        rand_inds = range(4)
+
+        image_inds = [image_inds[rand_ind] for rand_ind in rand_inds]
+        left_paths = [left_paths[rand_ind] for rand_ind in rand_inds]
+        disp_paths = [disp_paths[rand_ind] for rand_ind in rand_inds]
+        cam_info_paths = [cam_info_paths[rand_ind] for rand_ind in rand_inds]
+        seg_paths = [seg_paths[rand_ind] for rand_ind in rand_inds]
+        cloud_cam_paths = [cloud_cam_paths[rand_ind] for rand_ind in rand_inds]
+
     size_dict = {}
     for i in range(len(image_inds)):
         image_ind = image_inds[i]

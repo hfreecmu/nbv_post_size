@@ -18,9 +18,9 @@ def get_sub_dirs(data_dir, bag_type):
     
         clusters_path = os.path.join(subdir, 'associations', 'clusters.json')
         if not os.path.exists(clusters_path):
-            raise RuntimeError('No clusters path for: ' + subdir)
-            #print('No clusters for: ', subdir_name)
-            #continue
+            #raise RuntimeError('No clusters path for: ' + subdir)
+            print('No clusters for: ', subdir_name)
+            continue
 
         tag_id = int(subdir_name.split('_')[0])
         tag_ids.append(tag_id)

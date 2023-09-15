@@ -83,34 +83,34 @@ for SUB_DIR in $DATA_DIR/*/ ; do
     #don't need 1 as did already
 
     #step 2 get _image idss
-    echo -e "${GREEN}Getting image ids for $BASE_NAME"
-    python3 2_get_image_ids.py --data_dir $SUB_DIR
+    # echo -e "${GREEN}Getting image ids for $BASE_NAME"
+    # python3 2_get_image_ids.py --data_dir $SUB_DIR
 
-    #step 3 extract disparities
-    echo -e "${GREEN}Extracting disparities for $BASE_NAME"
-    python3 3_extract_disparities.py --data_dir $SUB_DIR --raft_restore_ckpt $RAFT_CKPT
+    # #step 3 extract disparities
+    # echo -e "${GREEN}Extracting disparities for $BASE_NAME"
+    # python3 3_extract_disparities.py --data_dir $SUB_DIR --raft_restore_ckpt $RAFT_CKPT
 
-    #step 4 extract point clouds
-    echo -e "${GREEN}Extracting point clouds for $BASE_NAME"
-    python3 4_extract_point_clouds.py --data_dir=$SUB_DIR
+    # #step 4 extract point clouds
+    # echo -e "${GREEN}Extracting point clouds for $BASE_NAME"
+    # python3 4_extract_point_clouds.py --data_dir=$SUB_DIR
 
-    #step 5 segment
-    echo -e "${GREEN}Segmenting for $BASE_NAME"
-    python3 5_segment.py --data_dir $SUB_DIR --model_path $SEG_MODEL_PATH
+    # #step 5 segment
+    # echo -e "${GREEN}Segmenting for $BASE_NAME"
+    # python3 5_segment.py --data_dir $SUB_DIR --model_path $SEG_MODEL_PATH
 
     #don't need 6 as did already
 
-    #step 7 filter segments
-    echo -e "${GREEN}Filtering segments for $BASE_NAME"
-    python3 7_filter_segments.py --data_dir $SUB_DIR
+    # #step 7 filter segments
+    # echo -e "${GREEN}Filtering segments for $BASE_NAME"
+    # python3 7_filter_segments.py --data_dir $SUB_DIR
 
-    #step 8 associate
-    echo -e "${GREEN}Associating for $BASE_NAME"
-    python3 8_associate.py --data_dir $SUB_DIR
+    # #step 8 associate
+    # echo -e "${GREEN}Associating for $BASE_NAME"
+    # python3 8_associate.py --data_dir $SUB_DIR
 
-    #step 9 fit ellipses
-    echo -e "${GREEN}Fitting ellipses for $BASE_NAME"
-    python3 9_fit_ellipse.py --data_dir $SUB_DIR
+    # #step 9 fit ellipses
+    # echo -e "${GREEN}Fitting ellipses for $BASE_NAME"
+    # python3 9_fit_ellipse.py --data_dir $SUB_DIR
 
     #step 10 size
     echo -e "${GREEN}Sizing for $BASE_NAME"
