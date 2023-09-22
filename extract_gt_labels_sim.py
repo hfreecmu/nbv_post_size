@@ -28,7 +28,7 @@ hsv_colors = np.vstack((purple_hsv, blue_hsv, orange_hsv, red_hsv, yellow_hsv, t
 
 def parse_exp_dirname(basename):
 
-    tree_id, foliage_num, cluster_text, cluster_num  = basename.split('_')
+    cluster_text, cluster_num, _, _  = basename.split('_')
 
     cluster_num_int = int(cluster_num)
     cluster_num  = "{:06d}".format(cluster_num_int)
@@ -172,6 +172,8 @@ def extract_gt_labels_full(input_dir, output_dir, bag_type, gazebo_model_dir, cl
     gt_data = {}
     num_spurious_dict = {}
 
+    num_imgs = []
+
     num_succ = 0
     num_unsucc = 0
     for basename in basenames:
@@ -181,6 +183,8 @@ def extract_gt_labels_full(input_dir, output_dir, bag_type, gazebo_model_dir, cl
 
         if success:
             num_succ += 1
+            message = success_yml['message']
+            num_imgs.append(int(message.split(' ')[2]))
         else:
             num_unsucc += 1
             continue
@@ -217,7 +221,8 @@ def extract_gt_labels_full(input_dir, output_dir, bag_type, gazebo_model_dir, cl
         'size_data': gt_data,
         'num_spurious': num_spurious_dict,
         'successful_exps': num_succ,
-        'unusccessful_exps': num_unsucc
+        'unusccessful_exps': num_unsucc,
+        'avg_images': float(np.mean(num_imgs))
     }
 
 

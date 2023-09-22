@@ -259,7 +259,6 @@ class BagExtract():
     def process_images_with_rect(self, left_image_raw_ros, right_image_raw_ros, 
                                  left_camera_info_ros, right_camera_info_ros,
                                  left_image_rect_ros, right_image_rect_ros):
-
         self.process_images(left_image_raw_ros, right_image_raw_ros,
                             left_camera_info_ros, right_camera_info_ros,
                             left_image_rect_ros=left_image_rect_ros,

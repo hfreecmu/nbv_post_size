@@ -115,7 +115,7 @@ def size_fruitlets(data_dir, bin_res, use_max):
     ellipses_dict = read_pickle(ellipses_path)
 
     path_ret = get_paths(data_dir, indices=None, use_filter_segs=True, include_cloud=True, use_filter_indices=True)
-    image_inds, left_paths, disp_paths, cam_info_paths, _, seg_paths, cloud_cam_paths, _ = path_ret
+    image_inds, left_paths, disp_paths, cam_info_paths, _, seg_paths, cloud_cam_paths, _ = path_ret        
 
     size_dict = {}
     for i in range(len(image_inds)):

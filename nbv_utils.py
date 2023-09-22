@@ -237,7 +237,11 @@ def extract_point_cloud(left_path, disparity_path,
     points[nan_inds] = np.nan
     colors[nan_inds] = np.nan
 
-    R, t = get_transform(transform_path)
+    if transform_path is None:
+        R = np.eye(3)
+        t = np.array([0, 0, 0])
+    else:
+        R, t = get_transform(transform_path)
     world_points = ((R @ points.reshape((-1, 3)).T).T + t).reshape(points.shape)
 
     if not include_discon:
@@ -254,7 +258,8 @@ def extract_point_cloud(left_path, disparity_path,
 #get paths following directory structure
 def get_paths(data_dir, indices, single=False, 
               use_filter_segs=False, include_cloud=False,
-              use_filter_indices=False):
+              use_filter_indices=False,
+              max_inds=None):
     left_dir = os.path.join(data_dir, 'rect_images', 'left')
     disparities_dir = os.path.join(data_dir, 'disparities')
     #use right camera info for baseline
@@ -283,6 +288,10 @@ def get_paths(data_dir, indices, single=False,
         else:
             inds_path = os.path.join(data_dir, 'filtered_indices.json')
         indices = read_json(inds_path)
+
+    if max_inds is not None:
+        if max_inds < len(indices):
+            indices = [indices[i] for i in range(max_inds)]
 
     for filename in os.listdir(left_dir):
         if not filename.endswith('.png'):

@@ -142,15 +142,15 @@ for use_a in [True, False]:
 
     plt.scatter(gt_sizes, cv_sizes)
     plt.plot(gt_sizes, yfit, 'r', label=label)
-    plt.xlabel("Ground Truth Sizes (mm)")
-    plt.ylabel("Predicted Sizes (mm)")
+    #plt.xlabel("Ground Truth Sizes (mm)")
+    #plt.ylabel("Predicted Sizes (mm)")
     # plt.text(0.8, 1.01, 'r2 score: ' + "{:.3f}".format(r2_base), 
     #     fontsize=10, color='k',
     #     ha='left', va='bottom',
     #     transform=plt.gca().transAxes)
 
-    plt.title(title)
-    plt.legend(loc="upper left")
+    #plt.title(title)
+    #plt.legend(loc="upper left")
     
     if use_a:
         gt_cv_comp_path = os.path.join(res_dir, 'r2_offset.png')

@@ -41,7 +41,7 @@ def extract_target_centres(input_dir, output_dir, bag_type, default_radius, use_
             print('No output dir for: ' + basename)
             continue
 
-        bag_file = os.path.join(sub_input_dir, 'run.bag')
+        bag_file = os.path.join(sub_input_dir, basename + '.bag')
         if not os.path.exists(bag_file):
             print('No bag file for: ' + basename)
             continue

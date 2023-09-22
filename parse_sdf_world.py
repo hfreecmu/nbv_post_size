@@ -68,6 +68,7 @@ def parse_model(model, sdf_path, gazebo_model_path, model_prefixes, model_name, 
         elif child.tag == 'link':
             parse_link(child, sdf_path, model_prefixes.copy(), link_dict)
         elif child.tag == 'include':
+            continue
             raise RuntimeError('I know I wrote to support this but why is it here?')
             parse_include(child, sdf_path, gazebo_model_path, model_prefixes.copy(), link_dict)
         else:

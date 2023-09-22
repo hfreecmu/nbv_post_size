@@ -90,7 +90,7 @@ for SUB_DIR in $INPUT_DIR/*/ ; do
     echo -e "${GREEN}Processing $BASE_NAME"
     FULL_LIST+=("$BASE_NAME;")
 
-    BAG_FILE="${SUB_DIR}/run.bag"
+    BAG_FILE="${SUB_DIR}/$BASE_NAME.bag"
     
     if [ ! -f $BAG_FILE ]; then
         FAILED_LIST+=("$BASE_NAME;")
